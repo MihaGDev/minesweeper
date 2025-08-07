@@ -17,8 +17,312 @@ class Minesweeper {
         this.highScores = this.loadHighScores();
         this.difficulty = 'beginner'; // beginner, intermediate, expert
         
+        // Multiplayer system
+        this.isMultiplayer = false;
+        this.roomId = null;
+        this.playerId = this.generatePlayerId();
+        this.players = new Map();
+        this.isHost = false;
+        this.peerConnections = new Map();
+        this.localStream = null;
+        this.remoteStreams = new Map();
+        
+        // WebRTC configuration
+        this.rtcConfig = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+        
         this.initializeGame();
         this.setupEventListeners();
+        this.initializeMultiplayer();
+    }
+    
+    generatePlayerId() {
+        return 'player_' + Math.random().toString(36).substr(2, 9);
+    }
+    
+    initializeMultiplayer() {
+        this.setupVoiceChat();
+        this.setupMultiplayerUI();
+    }
+    
+    setupVoiceChat() {
+        // Request microphone access
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                this.localStream = stream;
+                this.updateVoiceStatus('Connected');
+            })
+            .catch(err => {
+                console.log('Microphone access denied:', err);
+                this.updateVoiceStatus('No Mic');
+            });
+    }
+    
+    setupMultiplayerUI() {
+        // Add multiplayer controls to the menu
+        const menuBar = document.querySelector('.menu-bar');
+        const multiplayerBtn = document.createElement('div');
+        multiplayerBtn.className = 'menu-item';
+        multiplayerBtn.id = 'multiplayer-btn';
+        multiplayerBtn.textContent = 'Multiplayer';
+        menuBar.appendChild(multiplayerBtn);
+        
+        // Add voice chat controls
+        const voiceBtn = document.createElement('div');
+        voiceBtn.className = 'menu-item';
+        voiceBtn.id = 'voice-btn';
+        voiceBtn.textContent = 'Voice: Off';
+        menuBar.appendChild(voiceBtn);
+        
+        // Event listeners
+        multiplayerBtn.addEventListener('click', () => {
+            this.toggleMultiplayer();
+        });
+        
+        voiceBtn.addEventListener('click', () => {
+            this.toggleVoiceChat();
+        });
+    }
+    
+    toggleMultiplayer() {
+        if (!this.isMultiplayer) {
+            this.createOrJoinRoom();
+        } else {
+            this.leaveRoom();
+        }
+    }
+    
+    createOrJoinRoom() {
+        const roomId = prompt('Enter room ID to join, or leave empty to create new room:');
+        
+        if (roomId === null) return;
+        
+        if (roomId.trim() === '') {
+            // Create new room
+            this.roomId = this.generateRoomId();
+            this.isHost = true;
+            this.updateStatus(`Created room: ${this.roomId}`);
+        } else {
+            // Join existing room
+            this.roomId = roomId.trim();
+            this.isHost = false;
+            this.updateStatus(`Joined room: ${this.roomId}`);
+        }
+        
+        this.isMultiplayer = true;
+        this.updateMultiplayerUI();
+        this.startMultiplayerGame();
+    }
+    
+    generateRoomId() {
+        return Math.random().toString(36).substr(2, 6).toUpperCase();
+    }
+    
+    leaveRoom() {
+        this.isMultiplayer = false;
+        this.roomId = null;
+        this.isHost = false;
+        this.players.clear();
+        this.peerConnections.clear();
+        this.remoteStreams.clear();
+        
+        // Stop all peer connections
+        this.peerConnections.forEach(connection => {
+            connection.close();
+        });
+        
+        // Stop multiplayer simulation
+        if (this.multiplayerInterval) {
+            clearInterval(this.multiplayerInterval);
+            this.multiplayerInterval = null;
+        }
+        
+        // Remove multiplayer class
+        document.querySelector('.game-container').classList.remove('multiplayer');
+        
+        // Remove players list
+        const playersContainer = document.querySelector('.players-container');
+        if (playersContainer) {
+            playersContainer.remove();
+        }
+        
+        this.updateStatus('Left multiplayer room');
+        this.updateMultiplayerUI();
+        this.resetGame();
+    }
+    
+    startMultiplayerGame() {
+        // Add current player to players list
+        this.players.set(this.playerId, {
+            id: this.playerId,
+            name: `Player ${this.playerId.slice(-4)}`,
+            score: 0,
+            isHost: this.isHost
+        });
+        
+        // Simulate other players joining (in real implementation, this would be WebSocket)
+        this.simulatePlayersJoining();
+        
+        // Start voice chat if enabled
+        if (this.localStream) {
+            this.startVoiceChat();
+        }
+        
+        // Add multiplayer class to container
+        document.querySelector('.game-container').classList.add('multiplayer');
+        
+        // Start multiplayer simulation
+        this.startMultiplayerSimulation();
+    }
+    
+    startMultiplayerSimulation() {
+        // Simulate periodic game state updates
+        this.multiplayerInterval = setInterval(() => {
+            if (this.isMultiplayer && this.gameStarted && !this.gameOver) {
+                this.syncGameState();
+                
+                // Simulate other players making moves
+                if (Math.random() < 0.1) { // 10% chance per interval
+                    this.simulateRandomPlayerMove();
+                }
+            }
+        }, 3000); // Every 3 seconds
+    }
+    
+    simulateRandomPlayerMove() {
+        const otherPlayers = Array.from(this.players.keys()).filter(id => id !== this.playerId);
+        if (otherPlayers.length > 0) {
+            const randomPlayerId = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+            const randomRow = Math.floor(Math.random() * this.rows);
+            const randomCol = Math.floor(Math.random() * this.cols);
+            
+            this.notifyOtherPlayers('cellRevealed', {
+                row: randomRow,
+                col: randomCol,
+                playerId: randomPlayerId,
+                score: Math.floor(Math.random() * 1000)
+            });
+        }
+    }
+    
+    simulatePlayersJoining() {
+        // Simulate 2 other players joining
+        const playerIds = ['player_abc123', 'player_def456'];
+        const playerNames = ['Alice', 'Bob'];
+        
+        setTimeout(() => {
+            playerIds.forEach((id, index) => {
+                this.players.set(id, {
+                    id: id,
+                    name: playerNames[index],
+                    score: 0,
+                    isHost: false
+                });
+                
+                // Simulate WebRTC connection
+                this.createPeerConnection(id);
+            });
+            
+            this.updatePlayersList();
+        }, 1000);
+    }
+    
+    createPeerConnection(peerId) {
+        const peerConnection = new RTCPeerConnection(this.rtcConfig);
+        
+        // Add local stream
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, this.localStream);
+            });
+        }
+        
+        // Handle incoming streams
+        peerConnection.ontrack = (event) => {
+            this.remoteStreams.set(peerId, event.streams[0]);
+            this.updateVoiceStatus('Voice Active');
+        };
+        
+        this.peerConnections.set(peerId, peerConnection);
+        
+        // Simulate connection establishment
+        setTimeout(() => {
+            this.updateStatus(`${this.players.get(peerId)?.name} joined voice chat`);
+        }, 500);
+    }
+    
+    startVoiceChat() {
+        this.updateVoiceStatus('Voice Active');
+        this.updateStatus('Voice chat started');
+    }
+    
+    toggleVoiceChat() {
+        const voiceBtn = document.getElementById('voice-btn');
+        if (voiceBtn.textContent.includes('Off')) {
+            voiceBtn.textContent = 'Voice: On';
+            this.startVoiceChat();
+        } else {
+            voiceBtn.textContent = 'Voice: Off';
+            this.updateVoiceStatus('Voice Muted');
+        }
+    }
+    
+    updateVoiceStatus(status) {
+        const voiceBtn = document.getElementById('voice-btn');
+        if (voiceBtn) {
+            voiceBtn.textContent = `Voice: ${status}`;
+        }
+    }
+    
+    updateMultiplayerUI() {
+        const multiplayerBtn = document.getElementById('multiplayer-btn');
+        if (multiplayerBtn) {
+            if (this.isMultiplayer) {
+                multiplayerBtn.textContent = `Room: ${this.roomId}`;
+                multiplayerBtn.style.backgroundColor = '#000080';
+                multiplayerBtn.style.color = 'white';
+            } else {
+                multiplayerBtn.textContent = 'Multiplayer';
+                multiplayerBtn.style.backgroundColor = '';
+                multiplayerBtn.style.color = '';
+            }
+        }
+    }
+    
+    updatePlayersList() {
+        const playersList = document.getElementById('players-list');
+        if (!playersList) {
+            this.createPlayersList();
+        }
+        
+        const playersListElement = document.getElementById('players-list');
+        playersListElement.innerHTML = '';
+        
+        this.players.forEach(player => {
+            const playerElement = document.createElement('div');
+            playerElement.className = 'player-item';
+            playerElement.innerHTML = `
+                <span class="player-name">${player.name}</span>
+                <span class="player-score">${player.score}</span>
+                ${player.isHost ? '<span class="host-badge">Host</span>' : ''}
+            `;
+            playersListElement.appendChild(playerElement);
+        });
+    }
+    
+    createPlayersList() {
+        const gameBoard = document.querySelector('.game-board');
+        const playersContainer = document.createElement('div');
+        playersContainer.className = 'players-container';
+        playersContainer.innerHTML = `
+            <div class="players-header">Players (${this.players.size})</div>
+            <div id="players-list" class="players-list"></div>
+        `;
+        gameBoard.appendChild(playersContainer);
     }
     
     initializeGame() {
@@ -124,10 +428,25 @@ class Minesweeper {
             this.updateSmiley('lost');
             this.stopTimer();
             this.updateStatus('Game Over!');
+            
+            // Notify other players in multiplayer
+            if (this.isMultiplayer) {
+                this.notifyOtherPlayers('gameOver', { playerId: this.playerId });
+            }
         } else {
             this.revealCell(row, col);
             if (this.checkWin()) {
                 this.gameWon();
+            }
+            
+            // Notify other players in multiplayer
+            if (this.isMultiplayer) {
+                this.notifyOtherPlayers('cellRevealed', { 
+                    row, 
+                    col, 
+                    playerId: this.playerId,
+                    score: this.currentScore 
+                });
             }
         }
     }
@@ -326,7 +645,7 @@ class Minesweeper {
         this.updateSmiley('won');
         this.stopTimer();
         
-        const finalScore = this.calculateScore();
+        const finalScore = this.isMultiplayer ? this.calculateMultiplayerScore() : this.calculateScore();
         this.currentScore = finalScore;
         
         // Check if it's a new high score
@@ -340,6 +659,15 @@ class Minesweeper {
         }
         
         this.updateScoreDisplay();
+        
+        // Notify other players in multiplayer
+        if (this.isMultiplayer) {
+            this.notifyOtherPlayers('gameWon', { 
+                playerId: this.playerId, 
+                score: finalScore 
+            });
+            this.updateStatus(`🎉 ${this.players.get(this.playerId)?.name} won the game!`);
+        }
         
         // Flag all mines
         this.minePositions.forEach(({row, col}) => {
@@ -456,6 +784,73 @@ class Minesweeper {
         
         this.minesLeft = this.mines;
         this.resetGame();
+    }
+    
+    // Multiplayer notification methods
+    notifyOtherPlayers(action, data) {
+        // In a real implementation, this would send data via WebSocket
+        console.log(`Multiplayer action: ${action}`, data);
+        
+        // Simulate receiving notifications from other players
+        if (action === 'cellRevealed') {
+            this.simulateOtherPlayerMove(data);
+        }
+    }
+    
+    simulateOtherPlayerMove(data) {
+        // Simulate another player making a move
+        setTimeout(() => {
+            const otherPlayer = this.players.get(data.playerId);
+            if (otherPlayer) {
+                this.updateStatus(`${otherPlayer.name} revealed a cell!`);
+                this.updatePlayerScore(data.playerId, data.score);
+            }
+        }, 1000);
+    }
+    
+    updatePlayerScore(playerId, score) {
+        const player = this.players.get(playerId);
+        if (player) {
+            player.score = score;
+            this.updatePlayersList();
+        }
+    }
+    
+    // Enhanced scoring for multiplayer
+    calculateMultiplayerScore() {
+        let baseScore = this.calculateScore();
+        
+        // Bonus for playing with others
+        if (this.isMultiplayer && this.players.size > 1) {
+            baseScore = Math.floor(baseScore * 1.5); // 50% bonus for multiplayer
+        }
+        
+        return baseScore;
+    }
+    
+    // Voice chat methods
+    sendVoiceMessage(message) {
+        if (this.isMultiplayer && this.localStream) {
+            this.updateStatus(`Voice: ${message}`);
+            // In real implementation, this would send audio data
+        }
+    }
+    
+    // Multiplayer game synchronization
+    syncGameState() {
+        if (this.isMultiplayer) {
+            const gameState = {
+                board: this.board,
+                revealedCount: this.revealedCount,
+                minesLeft: this.minesLeft,
+                timer: this.timer,
+                gameOver: this.gameOver,
+                currentScore: this.currentScore
+            };
+            
+            // In real implementation, this would sync with other players
+            console.log('Syncing game state:', gameState);
+        }
     }
 }
 

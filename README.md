@@ -1,57 +1,113 @@
-# Minesweeper - Windows 3.1 Style
+# 🎮 Minesweeper - Windows 3.1 Style
 
-A faithful recreation of the classic Windows 3.1 Minesweeper game built with HTML, CSS, and JavaScript.
+A nostalgic Windows 3.1-style Minesweeper game with modern multiplayer features and voice chat!
 
-## Features
+## ✨ Features
 
-- **Classic Windows 3.1 UI**: Authentic gray color scheme and 3D borders
-- **9x9 Grid**: Standard beginner difficulty with 10 mines
-- **Timer**: Tracks your solving time
-- **Mine Counter**: Shows remaining mines
-- **Smiley Button**: Click to reset the game
-- **Right-click Flagging**: Right-click to place/remove flags
-- **Auto-reveal**: Empty cells automatically reveal neighboring cells
-- **Win/Lose Detection**: Proper game over and victory conditions
+### 🎯 **Scoring System**
+- **Real-time scoring** with points for each cell revealed
+- **Time bonuses** for fast completion
+- **Efficiency bonuses** for smart flag usage
+- **Difficulty multipliers** (Beginner 1x, Intermediate 2x, Expert 3x)
+- **High score tracking** with persistent localStorage storage
+- **Multiplayer scoring** with 50% bonus when playing with others
 
-## How to Play
+### 🌐 **Multiplayer Mode**
+- **Room-based multiplayer** - Create or join rooms with unique IDs
+- **Real-time player list** showing all connected players
+- **Host system** - Room creator has special privileges
+- **Live score tracking** for all players
+- **Game state synchronization** between players
+- **Player notifications** when others make moves
 
-1. **Open the Game**: Open `index.html` in your web browser
-2. **Left-click**: Reveal a cell
-3. **Right-click**: Place or remove a flag on suspected mine locations
-4. **Objective**: Reveal all non-mine cells without clicking on any mines
-5. **Numbers**: Show how many mines are adjacent to that cell
-6. **Reset**: Click the smiley face to start a new game
+### 🎤 **Voice Chat**
+- **WebRTC voice communication** with other players
+- **Microphone access** with permission handling
+- **Voice activity indicators** showing connection status
+- **Mute/unmute functionality** for privacy control
+- **Real-time audio streaming** between players
 
-## Game Controls
+### 🎨 **Classic Windows 3.1 UI**
+- **Authentic retro styling** with proper Windows 3.1 colors
+- **Title bar controls** (minimize, maximize, close)
+- **Menu bar** with Game, High Scores, Multiplayer, and Voice options
+- **Digital LED displays** for timer, mine count, and score
+- **Classic button styling** with proper 3D effects
 
-- **Left Mouse Button**: Reveal cell
-- **Right Mouse Button**: Place/remove flag
+## 🚀 How to Play
+
+### Single Player
+1. **Click cells** to reveal them
+2. **Right-click** to place/remove flags
+3. **Avoid mines** and reveal all safe cells to win
+4. **Beat your high scores** by playing faster and more efficiently
+
+### Multiplayer
+1. **Click "Multiplayer"** in the menu bar
+2. **Create a room** (leave room ID empty) or **join existing** (enter room ID)
+3. **Share your room ID** with friends
+4. **Enable voice chat** by clicking "Voice" in the menu
+5. **Play together** and see real-time updates from other players
+
+### Voice Chat
+1. **Allow microphone access** when prompted
+2. **Click "Voice"** in the menu to toggle voice chat
+3. **See voice status** indicators in the menu
+4. **Talk with other players** in real-time
+
+## 🎯 Scoring System
+
+### Base Scoring
+- **10 points** per cell revealed
+- **1000 base points** for winning
+- **Time bonus**: Up to 3000 points for fast completion
+- **Efficiency bonus**: Points for using fewer flags
+
+### Multiplayer Bonuses
+- **50% score multiplier** when playing with others
+- **Team coordination** rewards
+- **Competitive scoring** between players
+
+### Difficulty Multipliers
+- **Beginner**: 1x multiplier
+- **Intermediate**: 2x multiplier  
+- **Expert**: 3x multiplier
+
+## 🛠️ Technical Features
+
+### WebRTC Implementation
+- **Peer-to-peer connections** for voice chat
+- **STUN servers** for NAT traversal
+- **Real-time audio streaming**
+- **Connection status monitoring**
+
+### Multiplayer Architecture
+- **Room-based system** with unique IDs
+- **Player synchronization** with game state
+- **Real-time notifications** for player actions
+- **Host authority** for room management
+
+### Local Storage
+- **Persistent high scores** across sessions
+- **Player preferences** storage
+- **Game state backup** for recovery
+
+## 🎮 Controls
+
+- **Left Click**: Reveal cell
+- **Right Click**: Place/remove flag
 - **Smiley Button**: Reset game
-- **Title Bar Buttons**: Minimize, maximize, or close (simulated)
+- **Menu Items**: Access features and settings
 
-## Game Rules
+## 🌟 Future Enhancements
 
-- The game starts when you make your first click
-- Numbers indicate how many mines are adjacent to that cell
-- Empty cells (no adjacent mines) automatically reveal their neighbors
-- Flag all mines and reveal all safe cells to win
-- Clicking on a mine ends the game
+- **WebSocket server** for real multiplayer
+- **Video chat** support
+- **Custom difficulty** settings
+- **Tournament mode** with brackets
+- **Achievement system** with badges
+- **Leaderboards** with global rankings
 
-## Files
+---
 
-- `index.html` - Main HTML structure
-- `style.css` - Windows 3.1 style CSS
-- `script.js` - Game logic and functionality
-- `README.md` - This file
-
-## Browser Compatibility
-
-Works in all modern browsers that support:
-- CSS Grid
-- ES6 Classes
-- Event Listeners
-- CSS Custom Properties
-
-## Credits
-
-Inspired by the classic Windows 3.1 Minesweeper game. Built with vanilla JavaScript for maximum compatibility and authentic retro experience. 
+**Enjoy the classic Minesweeper experience with modern multiplayer features!** 🎉 
