@@ -88,7 +88,7 @@ body {
     margin-bottom: 8px;
 }
 
-.mine-counter, .timer {
+.mine-counter, .timer, .score-counter {
     background-color: #000000;
     color: #ff0000;
     padding: 4px 8px;

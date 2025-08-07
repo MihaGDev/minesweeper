@@ -12,6 +12,11 @@ class Minesweeper {
         this.board = [];
         this.minePositions = [];
         
+        // Scoring system
+        this.currentScore = 0;
+        this.highScores = this.loadHighScores();
+        this.difficulty = 'beginner'; // beginner, intermediate, expert
+        
         this.initializeGame();
         this.setupEventListeners();
     }
@@ -24,6 +29,10 @@ class Minesweeper {
     createBoard() {
         const minefield = document.getElementById('minefield');
         minefield.innerHTML = '';
+        
+        // Update grid template based on current dimensions
+        minefield.style.gridTemplateColumns = `repeat(${this.cols}, 24px)`;
+        minefield.style.gridTemplateRows = `repeat(${this.rows}, 24px)`;
         
         this.board = [];
         for (let row = 0; row < this.rows; row++) {
@@ -67,6 +76,14 @@ class Minesweeper {
         smileyButton.addEventListener('click', () => {
             this.resetGame();
         });
+        
+        // High scores button
+        const highScoresBtn = document.getElementById('high-scores-btn');
+        if (highScoresBtn) {
+            highScoresBtn.addEventListener('click', () => {
+                this.showHighScores();
+            });
+        }
         
         // Title bar controls
         document.querySelector('.close').addEventListener('click', () => {
@@ -190,6 +207,10 @@ class Minesweeper {
         this.board[row][col].element.classList.add('revealed');
         this.revealedCount++;
         
+        // Add points for revealing cells
+        this.currentScore += 10;
+        this.updateScoreDisplay();
+        
         if (this.board[row][col].neighborMines > 0) {
             this.board[row][col].element.textContent = this.board[row][col].neighborMines;
             this.board[row][col].element.dataset.count = this.board[row][col].neighborMines;
@@ -229,11 +250,96 @@ class Minesweeper {
         return this.revealedCount === (this.rows * this.cols - this.mines);
     }
     
+    calculateScore() {
+        // Base score for winning
+        let baseScore = 1000;
+        
+        // Bonus for speed (faster = higher score)
+        const timeBonus = Math.max(0, 300 - this.timer) * 10;
+        
+        // Bonus for difficulty
+        let difficultyMultiplier = 1;
+        if (this.difficulty === 'intermediate') difficultyMultiplier = 2;
+        if (this.difficulty === 'expert') difficultyMultiplier = 3;
+        
+        // Penalty for flags used (efficiency bonus)
+        const flagsUsed = this.mines - this.minesLeft;
+        const efficiencyBonus = Math.max(0, this.mines - flagsUsed) * 50;
+        
+        this.currentScore = Math.floor((baseScore + timeBonus + efficiencyBonus) * difficultyMultiplier);
+        return this.currentScore;
+    }
+    
+    loadHighScores() {
+        const saved = localStorage.getItem('minesweeper-highscores');
+        return saved ? JSON.parse(saved) : {
+            beginner: [],
+            intermediate: [],
+            expert: []
+        };
+    }
+    
+    saveHighScore(score, time) {
+        const scoreEntry = {
+            score: score,
+            time: time,
+            date: new Date().toLocaleDateString(),
+            timestamp: Date.now()
+        };
+        
+        this.highScores[this.difficulty].push(scoreEntry);
+        this.highScores[this.difficulty].sort((a, b) => b.score - a.score);
+        this.highScores[this.difficulty] = this.highScores[this.difficulty].slice(0, 10); // Keep top 10
+        
+        localStorage.setItem('minesweeper-highscores', JSON.stringify(this.highScores));
+    }
+    
+    isNewHighScore(score) {
+        const currentHighs = this.highScores[this.difficulty];
+        return currentHighs.length < 10 || score > currentHighs[currentHighs.length - 1].score;
+    }
+    
+    displayHighScores() {
+        const scores = this.highScores[this.difficulty];
+        let scoreText = `High Scores (${this.difficulty}):\n`;
+        
+        if (scores.length === 0) {
+            scoreText += "No scores yet!";
+        } else {
+            scores.forEach((entry, index) => {
+                scoreText += `${index + 1}. ${entry.score} pts (${entry.time}s) - ${entry.date}\n`;
+            });
+        }
+        
+        alert(scoreText);
+    }
+    
+    updateScoreDisplay() {
+        const scoreElement = document.getElementById('score');
+        if (scoreElement) {
+            scoreElement.textContent = this.currentScore.toString().padStart(6, '0');
+        }
+    }
+    
     gameWon() {
         this.gameOver = true;
         this.updateSmiley('won');
         this.stopTimer();
-        this.updateStatus('You Won!');
+        
+        const finalScore = this.calculateScore();
+        this.currentScore = finalScore;
+        
+        // Check if it's a new high score
+        const isHighScore = this.isNewHighScore(finalScore);
+        
+        if (isHighScore) {
+            this.updateStatus(`New High Score! ${finalScore} points!`);
+            this.saveHighScore(finalScore, this.timer);
+        } else {
+            this.updateStatus(`You Won! Score: ${finalScore} points`);
+        }
+        
+        this.updateScoreDisplay();
         
         // Flag all mines
         this.minePositions.forEach(({row, col}) => {
@@ -304,6 +410,7 @@ class Minesweeper {
         this.updateTimer();
         this.updateSmiley('ready');
         this.updateStatus('Ready');
+        this.updateScoreDisplay();
     }
     
     resetGame() {
@@ -313,10 +420,42 @@ class Minesweeper {
         this.minesLeft = this.mines;
         this.revealedCount = 0;
         this.minePositions = [];
+        this.currentScore = 0;
         
         this.stopTimer();
         this.createBoard();
         this.updateDisplay();
+    }
+    
+    // Add method to show high scores
+    showHighScores() {
+        this.displayHighScores();
+    }
+    
+    // Method to change difficulty
+    setDifficulty(level) {
+        this.difficulty = level;
+        
+        switch(level) {
+            case 'beginner':
+                this.rows = 9;
+                this.cols = 9;
+                this.mines = 10;
+                break;
+            case 'intermediate':
+                this.rows = 16;
+                this.cols = 16;
+                this.mines = 40;
+                break;
+            case 'expert':
+                this.rows = 16;
+                this.cols = 30;
+                this.mines = 99;
+                break;
+        }
+        
+        this.minesLeft = this.mines;
+        this.resetGame();
     }
 }
 
