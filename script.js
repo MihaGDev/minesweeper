@@ -135,12 +135,6 @@ class Minesweeper {
             connection.close();
         });
         
-        // Stop multiplayer simulation
-        if (this.multiplayerInterval) {
-            clearInterval(this.multiplayerInterval);
-            this.multiplayerInterval = null;
-        }
-        
         // Remove multiplayer class
         document.querySelector('.game-container').classList.remove('multiplayer');
         
@@ -164,9 +158,6 @@ class Minesweeper {
             isHost: this.isHost
         });
         
-        // Simulate other players joining (in real implementation, this would be WebSocket)
-        this.simulatePlayersJoining();
-        
         // Start voice chat if enabled
         if (this.localStream) {
             this.startVoiceChat();
@@ -175,61 +166,11 @@ class Minesweeper {
         // Add multiplayer class to container
         document.querySelector('.game-container').classList.add('multiplayer');
         
-        // Start multiplayer simulation
-        this.startMultiplayerSimulation();
+        this.updatePlayersList();
+        this.updateStatus(`Multiplayer room ${this.roomId} ready for players`);
     }
     
-    startMultiplayerSimulation() {
-        // Simulate periodic game state updates
-        this.multiplayerInterval = setInterval(() => {
-            if (this.isMultiplayer && this.gameStarted && !this.gameOver) {
-                this.syncGameState();
-                
-                // Simulate other players making moves
-                if (Math.random() < 0.1) { // 10% chance per interval
-                    this.simulateRandomPlayerMove();
-                }
-            }
-        }, 3000); // Every 3 seconds
-    }
-    
-    simulateRandomPlayerMove() {
-        const otherPlayers = Array.from(this.players.keys()).filter(id => id !== this.playerId);
-        if (otherPlayers.length > 0) {
-            const randomPlayerId = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
-            const randomRow = Math.floor(Math.random() * this.rows);
-            const randomCol = Math.floor(Math.random() * this.cols);
-            
-            this.notifyOtherPlayers('cellRevealed', {
-                row: randomRow,
-                col: randomCol,
-                playerId: randomPlayerId,
-                score: Math.floor(Math.random() * 1000)
-            });
-        }
-    }
-    
-    simulatePlayersJoining() {
-        // Simulate 2 other players joining
-        const playerIds = ['player_abc123', 'player_def456'];
-        const playerNames = ['Alice', 'Bob'];
-        
-        setTimeout(() => {
-            playerIds.forEach((id, index) => {
-                this.players.set(id, {
-                    id: id,
-                    name: playerNames[index],
-                    score: 0,
-                    isHost: false
-                });
-                
-                // Simulate WebRTC connection
-                this.createPeerConnection(id);
-            });
-            
-            this.updatePlayersList();
-        }, 1000);
-    }
+
     
     createPeerConnection(peerId) {
         const peerConnection = new RTCPeerConnection(this.rtcConfig);
@@ -249,10 +190,7 @@ class Minesweeper {
         
         this.peerConnections.set(peerId, peerConnection);
         
-        // Simulate connection establishment
-        setTimeout(() => {
-            this.updateStatus(`${this.players.get(peerId)?.name} joined voice chat`);
-        }, 500);
+        this.updateStatus(`Peer connection established with ${peerId}`);
     }
     
     startVoiceChat() {
@@ -791,30 +729,11 @@ class Minesweeper {
         // In a real implementation, this would send data via WebSocket
         console.log(`Multiplayer action: ${action}`, data);
         
-        // Simulate receiving notifications from other players
-        if (action === 'cellRevealed') {
-            this.simulateOtherPlayerMove(data);
-        }
+        // Log the action for debugging
+        this.updateStatus(`Multiplayer action: ${action}`);
     }
     
-    simulateOtherPlayerMove(data) {
-        // Simulate another player making a move
-        setTimeout(() => {
-            const otherPlayer = this.players.get(data.playerId);
-            if (otherPlayer) {
-                this.updateStatus(`${otherPlayer.name} revealed a cell!`);
-                this.updatePlayerScore(data.playerId, data.score);
-            }
-        }, 1000);
-    }
-    
-    updatePlayerScore(playerId, score) {
-        const player = this.players.get(playerId);
-        if (player) {
-            player.score = score;
-            this.updatePlayersList();
-        }
-    }
+
     
     // Enhanced scoring for multiplayer
     calculateMultiplayerScore() {

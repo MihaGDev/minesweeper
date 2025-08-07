@@ -19,6 +19,7 @@ A nostalgic Windows 3.1-style Minesweeper game with modern multiplayer features 
 - **Live score tracking** for all players
 - **Game state synchronization** between players
 - **Player notifications** when others make moves
+- **Clean multiplayer** - No bots, only real players
 
 ### 🎤 **Voice Chat**
 - **WebRTC voice communication** with other players
@@ -47,7 +48,7 @@ A nostalgic Windows 3.1-style Minesweeper game with modern multiplayer features 
 2. **Create a room** (leave room ID empty) or **join existing** (enter room ID)
 3. **Share your room ID** with friends
 4. **Enable voice chat** by clicking "Voice" in the menu
-5. **Play together** and see real-time updates from other players
+5. **Play together** with real players (no bots!)
 
 ### Voice Chat
 1. **Allow microphone access** when prompted
