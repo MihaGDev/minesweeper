@@ -37,6 +37,19 @@ A nostalgic Windows 3.1-style Minesweeper game with modern multiplayer features 
 
 ## 🚀 How to Play
 
+### Setup Multiplayer Server
+1. **Install Node.js** if you haven't already
+2. **Run the startup script**: Double-click `start.bat` (Windows) or run:
+   ```bash
+   npm install
+   node server.js
+   ```
+3. **Start the game server**: In another terminal, run:
+   ```bash
+   python -m http.server 8000
+   ```
+4. **Open the game**: Go to `http://localhost:8000` in your browser
+
 ### Single Player
 1. **Click cells** to reveal them
 2. **Right-click** to place/remove flags
@@ -44,11 +57,12 @@ A nostalgic Windows 3.1-style Minesweeper game with modern multiplayer features 
 4. **Beat your high scores** by playing faster and more efficiently
 
 ### Multiplayer
-1. **Click "Multiplayer"** in the menu bar
-2. **Create a room** (leave room ID empty) or **join existing** (enter room ID)
-3. **Share your room ID** with friends
-4. **Enable voice chat** by clicking "Voice" in the menu
-5. **Play together** with real players (no bots!)
+1. **Start the server** using the setup instructions above
+2. **Click "Multiplayer"** in the menu bar
+3. **Create a room** (leave room ID empty) or **join existing** (enter room ID)
+4. **Share your room ID** with friends
+5. **Enable voice chat** by clicking "Voice" in the menu
+6. **Play together** with real players across different browsers/devices!
 
 ### Voice Chat
 1. **Allow microphone access** when prompted

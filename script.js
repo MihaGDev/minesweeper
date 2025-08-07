@@ -116,7 +116,126 @@ class Minesweeper {
         
         this.isMultiplayer = true;
         this.updateMultiplayerUI();
-        this.startMultiplayerGame();
+        this.connectToServer();
+    }
+    
+    connectToServer() {
+        // Connect to WebSocket server
+        const wsUrl = `ws://${window.location.hostname}:3000`;
+        this.websocket = new WebSocket(wsUrl);
+        
+        this.websocket.onopen = () => {
+            console.log('Connected to server');
+            this.updateStatus('Connected to multiplayer server');
+            this.joinRoom();
+        };
+        
+        this.websocket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            this.handleServerMessage(data);
+        };
+        
+        this.websocket.onclose = () => {
+            console.log('Disconnected from server');
+            this.updateStatus('Disconnected from server');
+        };
+        
+        this.websocket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            this.updateStatus('Connection error');
+        };
+    }
+    
+    joinRoom() {
+        if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
+            this.updateStatus('Not connected to server');
+            return;
+        }
+        
+        const message = {
+            type: 'join_room',
+            roomId: this.roomId,
+            playerId: this.playerId,
+            playerName: `Player ${this.playerId.slice(-4)}`
+        };
+        
+        this.websocket.send(JSON.stringify(message));
+        this.updateStatus(`Joining room: ${this.roomId}`);
+    }
+    
+    handleServerMessage(data) {
+        switch (data.type) {
+            case 'room_state':
+                this.handleRoomState(data);
+                break;
+            case 'player_joined':
+                this.handlePlayerJoined(data);
+                break;
+            case 'player_left':
+                this.handlePlayerLeft(data);
+                break;
+            case 'game_action':
+                this.handleGameAction(data);
+                break;
+            case 'voice_signal':
+                this.handleVoiceSignal(data);
+                break;
+            default:
+                console.log('Unknown server message:', data);
+        }
+    }
+    
+    handleRoomState(data) {
+        // Update players list with current room state
+        this.players.clear();
+        data.players.forEach(player => {
+            this.players.set(player.id, {
+                id: player.id,
+                name: player.name,
+                score: 0,
+                isHost: player.isHost
+            });
+        });
+        
+        this.updatePlayersList();
+        this.updateStatus(`Room ${this.roomId} - ${this.players.size} players`);
+    }
+    
+    handlePlayerJoined(data) {
+        const player = data.player;
+        this.players.set(player.id, {
+            id: player.id,
+            name: player.name,
+            score: 0,
+            isHost: player.isHost
+        });
+        
+        this.updatePlayersList();
+        this.updateStatus(`${player.name} joined the room!`);
+    }
+    
+    handlePlayerLeft(data) {
+        const player = this.players.get(data.playerId);
+        if (player) {
+            this.players.delete(data.playerId);
+            this.updatePlayersList();
+            this.updateStatus(`${player.name} left the room`);
+        }
+    }
+    
+    handleGameAction(data) {
+        // Handle game actions from other players
+        if (data.playerId !== this.playerId) {
+            this.updateStatus(`Player ${data.playerId} made a move`);
+        }
+    }
+    
+    handleVoiceSignal(data) {
+        // Handle WebRTC signaling from other players
+        if (data.playerId !== this.playerId) {
+            // Process voice signaling data
+            console.log('Voice signal from:', data.playerId);
+        }
     }
     
     generateRoomId() {
@@ -124,6 +243,22 @@ class Minesweeper {
     }
     
     leaveRoom() {
+        // Send leave room message to server
+        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+            const message = {
+                type: 'leave_room',
+                roomId: this.roomId,
+                playerId: this.playerId
+            };
+            this.websocket.send(JSON.stringify(message));
+        }
+        
+        // Close WebSocket connection
+        if (this.websocket) {
+            this.websocket.close();
+            this.websocket = null;
+        }
+        
         this.isMultiplayer = false;
         this.roomId = null;
         this.isHost = false;
@@ -727,11 +862,22 @@ class Minesweeper {
     
     // Multiplayer notification methods
     notifyOtherPlayers(action, data) {
-        // In a real implementation, this would send data via WebSocket
-        console.log(`Multiplayer action: ${action}`, data);
-        
-        // Log the action for debugging
-        this.updateStatus(`Multiplayer action: ${action}`);
+        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+            const message = {
+                type: 'game_action',
+                roomId: this.roomId,
+                playerId: this.playerId,
+                action: action,
+                gameState: {
+                    revealedCount: this.revealedCount,
+                    minesLeft: this.minesLeft,
+                    timer: this.timer,
+                    gameOver: this.gameOver,
+                    currentScore: this.currentScore
+                }
+            };
+            this.websocket.send(JSON.stringify(message));
+        }
     }
     
 
