@@ -1,0 +1,19 @@
+{
+  "name": "minesweeper-multiplayer",
+  "version": "1.0.0",
+  "description": "Multiplayer Minesweeper with WebSocket server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "keywords": ["minesweeper", "multiplayer", "websocket", "game"],
+  "author": "Your Name",
+  "license": "MIT"
+} 

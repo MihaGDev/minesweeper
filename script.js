@@ -26,6 +26,7 @@ class Minesweeper {
         this.peerConnections = new Map();
         this.localStream = null;
         this.remoteStreams = new Map();
+        this.websocket = null;
         
         // WebRTC configuration
         this.rtcConfig = {
