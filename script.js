@@ -23,18 +23,7 @@ class Minesweeper {
         this.playerId = this.generatePlayerId();
         this.players = new Map();
         this.isHost = false;
-        this.peerConnections = new Map();
-        this.localStream = null;
-        this.remoteStreams = new Map();
         this.websocket = null;
-        
-        // WebRTC configuration
-        this.rtcConfig = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
         
         this.initializeGame();
         this.setupEventListeners();
@@ -46,21 +35,7 @@ class Minesweeper {
     }
     
     initializeMultiplayer() {
-        this.setupVoiceChat();
         this.setupMultiplayerUI();
-    }
-    
-    setupVoiceChat() {
-        // Request microphone access
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(stream => {
-                this.localStream = stream;
-                this.updateVoiceStatus('Connected');
-            })
-            .catch(err => {
-                console.log('Microphone access denied:', err);
-                this.updateVoiceStatus('No Mic');
-            });
     }
     
     setupMultiplayerUI() {
@@ -72,20 +47,9 @@ class Minesweeper {
         multiplayerBtn.textContent = 'Multiplayer';
         menuBar.appendChild(multiplayerBtn);
         
-        // Add voice chat controls
-        const voiceBtn = document.createElement('div');
-        voiceBtn.className = 'menu-item';
-        voiceBtn.id = 'voice-btn';
-        voiceBtn.textContent = 'Voice: Off';
-        menuBar.appendChild(voiceBtn);
-        
         // Event listeners
         multiplayerBtn.addEventListener('click', () => {
             this.toggleMultiplayer();
-        });
-        
-        voiceBtn.addEventListener('click', () => {
-            this.toggleVoiceChat();
         });
     }
     
@@ -177,9 +141,6 @@ class Minesweeper {
             case 'game_action':
                 this.handleGameAction(data);
                 break;
-            case 'voice_signal':
-                this.handleVoiceSignal(data);
-                break;
             default:
                 console.log('Unknown server message:', data);
         }
@@ -230,13 +191,7 @@ class Minesweeper {
         }
     }
     
-    handleVoiceSignal(data) {
-        // Handle WebRTC signaling from other players
-        if (data.playerId !== this.playerId) {
-            // Process voice signaling data
-            console.log('Voice signal from:', data.playerId);
-        }
-    }
+
     
     generateRoomId() {
         return Math.random().toString(36).substr(2, 6).toUpperCase();
@@ -263,13 +218,6 @@ class Minesweeper {
         this.roomId = null;
         this.isHost = false;
         this.players.clear();
-        this.peerConnections.clear();
-        this.remoteStreams.clear();
-        
-        // Stop all peer connections
-        this.peerConnections.forEach(connection => {
-            connection.close();
-        });
         
         // Remove multiplayer class
         document.querySelector('.game-container').classList.remove('multiplayer');
@@ -294,11 +242,6 @@ class Minesweeper {
             isHost: this.isHost
         });
         
-        // Start voice chat if enabled
-        if (this.localStream) {
-            this.startVoiceChat();
-        }
-        
         // Add multiplayer class to container
         document.querySelector('.game-container').classList.add('multiplayer');
         
@@ -307,50 +250,6 @@ class Minesweeper {
     }
     
 
-    
-    createPeerConnection(peerId) {
-        const peerConnection = new RTCPeerConnection(this.rtcConfig);
-        
-        // Add local stream
-        if (this.localStream) {
-            this.localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, this.localStream);
-            });
-        }
-        
-        // Handle incoming streams
-        peerConnection.ontrack = (event) => {
-            this.remoteStreams.set(peerId, event.streams[0]);
-            this.updateVoiceStatus('Voice Active');
-        };
-        
-        this.peerConnections.set(peerId, peerConnection);
-        
-        this.updateStatus(`Peer connection established with ${peerId}`);
-    }
-    
-    startVoiceChat() {
-        this.updateVoiceStatus('Voice Active');
-        this.updateStatus('Voice chat started');
-    }
-    
-    toggleVoiceChat() {
-        const voiceBtn = document.getElementById('voice-btn');
-        if (voiceBtn.textContent.includes('Off')) {
-            voiceBtn.textContent = 'Voice: On';
-            this.startVoiceChat();
-        } else {
-            voiceBtn.textContent = 'Voice: Off';
-            this.updateVoiceStatus('Voice Muted');
-        }
-    }
-    
-    updateVoiceStatus(status) {
-        const voiceBtn = document.getElementById('voice-btn');
-        if (voiceBtn) {
-            voiceBtn.textContent = `Voice: ${status}`;
-        }
-    }
     
     updateMultiplayerUI() {
         const multiplayerBtn = document.getElementById('multiplayer-btn');
@@ -894,13 +793,7 @@ class Minesweeper {
         return baseScore;
     }
     
-    // Voice chat methods
-    sendVoiceMessage(message) {
-        if (this.isMultiplayer && this.localStream) {
-            this.updateStatus(`Voice: ${message}`);
-            // In real implementation, this would send audio data
-        }
-    }
+
     
     // Multiplayer game synchronization
     syncGameState() {

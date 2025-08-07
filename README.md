@@ -21,12 +21,7 @@ A nostalgic Windows 3.1-style Minesweeper game with modern multiplayer features 
 - **Player notifications** when others make moves
 - **Clean multiplayer** - No bots, only real players
 
-### 🎤 **Voice Chat**
-- **WebRTC voice communication** with other players
-- **Microphone access** with permission handling
-- **Voice activity indicators** showing connection status
-- **Mute/unmute functionality** for privacy control
-- **Real-time audio streaming** between players
+
 
 ### 🎨 **Classic Windows 3.1 UI**
 - **Authentic retro styling** with proper Windows 3.1 colors
@@ -61,14 +56,7 @@ A nostalgic Windows 3.1-style Minesweeper game with modern multiplayer features 
 2. **Click "Multiplayer"** in the menu bar
 3. **Create a room** (leave room ID empty) or **join existing** (enter room ID)
 4. **Share your room ID** with friends
-5. **Enable voice chat** by clicking "Voice" in the menu
-6. **Play together** with real players across different browsers/devices!
-
-### Voice Chat
-1. **Allow microphone access** when prompted
-2. **Click "Voice"** in the menu to toggle voice chat
-3. **See voice status** indicators in the menu
-4. **Talk with other players** in real-time
+5. **Play together** with real players across different browsers/devices!
 
 ## 🎯 Scoring System
 
@@ -90,11 +78,7 @@ A nostalgic Windows 3.1-style Minesweeper game with modern multiplayer features 
 
 ## 🛠️ Technical Features
 
-### WebRTC Implementation
-- **Peer-to-peer connections** for voice chat
-- **STUN servers** for NAT traversal
-- **Real-time audio streaming**
-- **Connection status monitoring**
+
 
 ### Multiplayer Architecture
 - **Room-based system** with unique IDs
@@ -116,7 +100,6 @@ A nostalgic Windows 3.1-style Minesweeper game with modern multiplayer features 
 
 ## 🌟 Future Enhancements
 
-- **WebSocket server** for real multiplayer
 - **Video chat** support
 - **Custom difficulty** settings
 - **Tournament mode** with brackets

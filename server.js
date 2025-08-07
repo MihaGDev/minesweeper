@@ -35,9 +35,6 @@ function handleMessage(ws, data) {
         case 'game_action':
             handleGameAction(ws, data);
             break;
-        case 'voice_signal':
-            handleVoiceSignal(ws, data);
-            break;
         default:
             console.log('Unknown message type:', data.type);
     }
@@ -136,17 +133,7 @@ function handleGameAction(ws, data) {
     }, ws); // Exclude sender
 }
 
-function handleVoiceSignal(ws, data) {
-    const player = players.get(ws);
-    if (!player) return;
-    
-    // Relay voice signaling data to other players
-    broadcastToRoom(player.roomId, {
-        type: 'voice_signal',
-        playerId: player.id,
-        signal: data.signal
-    }, ws);
-}
+
 
 function handlePlayerDisconnect(ws) {
     const player = players.get(ws);

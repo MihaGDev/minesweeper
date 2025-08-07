@@ -285,16 +285,7 @@ body {
     border-radius: 2px;
 }
 
-/* Voice chat indicator */
-#voice-btn {
-    position: relative;
-}
 
-#voice-btn::after {
-    content: "🎤";
-    font-size: 10px;
-    margin-left: 4px;
-}
 
 /* Multiplayer room indicator */
 #multiplayer-btn.active {
@@ -307,13 +298,4 @@ body {
     width: 400px;
 }
 
-/* Voice activity indicator */
-.voice-active {
-    animation: voicePulse 1s infinite;
-}
-
-@keyframes voicePulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
-} 
+ 
