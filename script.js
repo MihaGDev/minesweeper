@@ -17,286 +17,23 @@ class Minesweeper {
         this.highScores = this.loadHighScores();
         this.difficulty = 'beginner'; // beginner, intermediate, expert
         
-        // Multiplayer system
-        this.isMultiplayer = false;
-        this.roomId = null;
-        this.playerId = this.generatePlayerId();
-        this.players = new Map();
-        this.isHost = false;
-        this.websocket = null;
+
         
         this.initializeGame();
         this.setupEventListeners();
-        this.initializeMultiplayer();
-    }
-    
-    generatePlayerId() {
-        return 'player_' + Math.random().toString(36).substr(2, 9);
-    }
-    
-    initializeMultiplayer() {
-        this.setupMultiplayerUI();
-    }
-    
-    setupMultiplayerUI() {
-        // Add multiplayer controls to the menu
-        const menuBar = document.querySelector('.menu-bar');
-        const multiplayerBtn = document.createElement('div');
-        multiplayerBtn.className = 'menu-item';
-        multiplayerBtn.id = 'multiplayer-btn';
-        multiplayerBtn.textContent = 'Multiplayer';
-        menuBar.appendChild(multiplayerBtn);
-        
-        // Event listeners
-        multiplayerBtn.addEventListener('click', () => {
-            this.toggleMultiplayer();
-        });
-    }
-    
-    toggleMultiplayer() {
-        if (!this.isMultiplayer) {
-            this.createOrJoinRoom();
-        } else {
-            this.leaveRoom();
-        }
-    }
-    
-    createOrJoinRoom() {
-        const roomId = prompt('Enter room ID to join, or leave empty to create new room:');
-        
-        if (roomId === null) return;
-        
-        if (roomId.trim() === '') {
-            // Create new room
-            this.roomId = this.generateRoomId();
-            this.isHost = true;
-            this.updateStatus(`Created room: ${this.roomId}`);
-        } else {
-            // Join existing room
-            this.roomId = roomId.trim();
-            this.isHost = false;
-            this.updateStatus(`Joined room: ${this.roomId}`);
-        }
-        
-        this.isMultiplayer = true;
-        this.updateMultiplayerUI();
-        this.connectToServer();
-    }
-    
-    connectToServer() {
-        // Connect to WebSocket server
-        const wsUrl = `ws://${window.location.hostname}:3000`;
-        this.websocket = new WebSocket(wsUrl);
-        
-        this.websocket.onopen = () => {
-            console.log('Connected to server');
-            this.updateStatus('Connected to multiplayer server');
-            this.joinRoom();
-        };
-        
-        this.websocket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            this.handleServerMessage(data);
-        };
-        
-        this.websocket.onclose = () => {
-            console.log('Disconnected from server');
-            this.updateStatus('Disconnected from server');
-        };
-        
-        this.websocket.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            this.updateStatus('Connection error');
-        };
-    }
-    
-    joinRoom() {
-        if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
-            this.updateStatus('Not connected to server');
-            return;
-        }
-        
-        const message = {
-            type: 'join_room',
-            roomId: this.roomId,
-            playerId: this.playerId,
-            playerName: `Player ${this.playerId.slice(-4)}`
-        };
-        
-        this.websocket.send(JSON.stringify(message));
-        this.updateStatus(`Joining room: ${this.roomId}`);
-    }
-    
-    handleServerMessage(data) {
-        switch (data.type) {
-            case 'room_state':
-                this.handleRoomState(data);
-                break;
-            case 'player_joined':
-                this.handlePlayerJoined(data);
-                break;
-            case 'player_left':
-                this.handlePlayerLeft(data);
-                break;
-            case 'game_action':
-                this.handleGameAction(data);
-                break;
-            default:
-                console.log('Unknown server message:', data);
-        }
-    }
-    
-    handleRoomState(data) {
-        // Update players list with current room state
-        this.players.clear();
-        data.players.forEach(player => {
-            this.players.set(player.id, {
-                id: player.id,
-                name: player.name,
-                score: 0,
-                isHost: player.isHost
-            });
-        });
-        
-        this.updatePlayersList();
-        this.updateStatus(`Room ${this.roomId} - ${this.players.size} players`);
-    }
-    
-    handlePlayerJoined(data) {
-        const player = data.player;
-        this.players.set(player.id, {
-            id: player.id,
-            name: player.name,
-            score: 0,
-            isHost: player.isHost
-        });
-        
-        this.updatePlayersList();
-        this.updateStatus(`${player.name} joined the room!`);
-    }
-    
-    handlePlayerLeft(data) {
-        const player = this.players.get(data.playerId);
-        if (player) {
-            this.players.delete(data.playerId);
-            this.updatePlayersList();
-            this.updateStatus(`${player.name} left the room`);
-        }
-    }
-    
-    handleGameAction(data) {
-        // Handle game actions from other players
-        if (data.playerId !== this.playerId) {
-            this.updateStatus(`Player ${data.playerId} made a move`);
-        }
     }
     
 
     
-    generateRoomId() {
-        return Math.random().toString(36).substr(2, 6).toUpperCase();
-    }
-    
-    leaveRoom() {
-        // Send leave room message to server
-        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-            const message = {
-                type: 'leave_room',
-                roomId: this.roomId,
-                playerId: this.playerId
-            };
-            this.websocket.send(JSON.stringify(message));
-        }
-        
-        // Close WebSocket connection
-        if (this.websocket) {
-            this.websocket.close();
-            this.websocket = null;
-        }
-        
-        this.isMultiplayer = false;
-        this.roomId = null;
-        this.isHost = false;
-        this.players.clear();
-        
-        // Remove multiplayer class
-        document.querySelector('.game-container').classList.remove('multiplayer');
-        
-        // Remove players list
-        const playersContainer = document.querySelector('.players-container');
-        if (playersContainer) {
-            playersContainer.remove();
-        }
-        
-        this.updateStatus('Left multiplayer room');
-        this.updateMultiplayerUI();
-        this.resetGame();
-    }
-    
-    startMultiplayerGame() {
-        // Add current player to players list
-        this.players.set(this.playerId, {
-            id: this.playerId,
-            name: `Player ${this.playerId.slice(-4)}`,
-            score: 0,
-            isHost: this.isHost
-        });
-        
-        // Add multiplayer class to container
-        document.querySelector('.game-container').classList.add('multiplayer');
-        
-        this.updatePlayersList();
-        this.updateStatus(`Multiplayer room ${this.roomId} ready for players`);
-    }
+
     
 
     
-    updateMultiplayerUI() {
-        const multiplayerBtn = document.getElementById('multiplayer-btn');
-        if (multiplayerBtn) {
-            if (this.isMultiplayer) {
-                multiplayerBtn.textContent = `Room: ${this.roomId}`;
-                multiplayerBtn.style.backgroundColor = '#000080';
-                multiplayerBtn.style.color = 'white';
-            } else {
-                multiplayerBtn.textContent = 'Multiplayer';
-                multiplayerBtn.style.backgroundColor = '';
-                multiplayerBtn.style.color = '';
-            }
-        }
-    }
+
+
     
-    updatePlayersList() {
-        const playersList = document.getElementById('players-list');
-        if (!playersList) {
-            this.createPlayersList();
-        }
-        
-        const playersListElement = document.getElementById('players-list');
-        playersListElement.innerHTML = '';
-        
-        this.players.forEach(player => {
-            const playerElement = document.createElement('div');
-            playerElement.className = 'player-item';
-            playerElement.innerHTML = `
-                <span class="player-name">${player.name}</span>
-                <span class="player-score">${player.score}</span>
-                ${player.isHost ? '<span class="host-badge">Host</span>' : ''}
-            `;
-            playersListElement.appendChild(playerElement);
-        });
-    }
-    
-    createPlayersList() {
-        const gameBoard = document.querySelector('.game-board');
-        const playersContainer = document.createElement('div');
-        playersContainer.className = 'players-container';
-        playersContainer.innerHTML = `
-            <div class="players-header">Players (${this.players.size})</div>
-            <div id="players-list" class="players-list"></div>
-        `;
-        gameBoard.appendChild(playersContainer);
-    }
+
+
     
     initializeGame() {
         this.createBoard();
@@ -401,25 +138,10 @@ class Minesweeper {
             this.updateSmiley('lost');
             this.stopTimer();
             this.updateStatus('Game Over!');
-            
-            // Notify other players in multiplayer
-            if (this.isMultiplayer) {
-                this.notifyOtherPlayers('gameOver', { playerId: this.playerId });
-            }
         } else {
             this.revealCell(row, col);
             if (this.checkWin()) {
                 this.gameWon();
-            }
-            
-            // Notify other players in multiplayer
-            if (this.isMultiplayer) {
-                this.notifyOtherPlayers('cellRevealed', { 
-                    row, 
-                    col, 
-                    playerId: this.playerId,
-                    score: this.currentScore 
-                });
             }
         }
     }
@@ -618,7 +340,7 @@ class Minesweeper {
         this.updateSmiley('won');
         this.stopTimer();
         
-        const finalScore = this.isMultiplayer ? this.calculateMultiplayerScore() : this.calculateScore();
+        const finalScore = this.calculateScore();
         this.currentScore = finalScore;
         
         // Check if it's a new high score
@@ -632,15 +354,6 @@ class Minesweeper {
         }
         
         this.updateScoreDisplay();
-        
-        // Notify other players in multiplayer
-        if (this.isMultiplayer) {
-            this.notifyOtherPlayers('gameWon', { 
-                playerId: this.playerId, 
-                score: finalScore 
-            });
-            this.updateStatus(`🎉 ${this.players.get(this.playerId)?.name} won the game!`);
-        }
         
         // Flag all mines
         this.minePositions.forEach(({row, col}) => {
@@ -759,58 +472,7 @@ class Minesweeper {
         this.resetGame();
     }
     
-    // Multiplayer notification methods
-    notifyOtherPlayers(action, data) {
-        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-            const message = {
-                type: 'game_action',
-                roomId: this.roomId,
-                playerId: this.playerId,
-                action: action,
-                gameState: {
-                    revealedCount: this.revealedCount,
-                    minesLeft: this.minesLeft,
-                    timer: this.timer,
-                    gameOver: this.gameOver,
-                    currentScore: this.currentScore
-                }
-            };
-            this.websocket.send(JSON.stringify(message));
-        }
-    }
-    
 
-    
-    // Enhanced scoring for multiplayer
-    calculateMultiplayerScore() {
-        let baseScore = this.calculateScore();
-        
-        // Bonus for playing with others
-        if (this.isMultiplayer && this.players.size > 1) {
-            baseScore = Math.floor(baseScore * 1.5); // 50% bonus for multiplayer
-        }
-        
-        return baseScore;
-    }
-    
-
-    
-    // Multiplayer game synchronization
-    syncGameState() {
-        if (this.isMultiplayer) {
-            const gameState = {
-                board: this.board,
-                revealedCount: this.revealedCount,
-                minesLeft: this.minesLeft,
-                timer: this.timer,
-                gameOver: this.gameOver,
-                currentScore: this.currentScore
-            };
-            
-            // In real implementation, this would sync with other players
-            console.log('Syncing game state:', gameState);
-        }
-    }
 }
 
 // Initialize the game when the page loads
